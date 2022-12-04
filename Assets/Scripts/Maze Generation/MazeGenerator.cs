@@ -50,13 +50,17 @@ public class MazeGenerator : MonoBehaviour
     {
         _currentBlock = currentBlock;
         
-        if(blocksList.Contains(GameObject.FindGameObjectWithTag(nonVisitedTag)) && seconds >= 4)
-        {
-            GenerateMaze();
-            seconds = 0;
+        if(Input.GetKeyDown(KeyCode.E)) {GenerateMaze(); //print("Current block index: " + currentBlockIndex);
         }
-        seconds += 1;
 
+        // if(blocksList.Contains(GameObject.FindGameObjectWithTag(nonVisitedTag)) && seconds >= 4)
+        // {
+        //     GenerateMaze();
+        //     seconds = 0;
+        // }
+        // seconds += 1;
+
+        //spawns the player on the network if the maze is finished (On the old method)
         if(!blocksList.Contains(GameObject.FindGameObjectWithTag(nonVisitedTag)) && isGenerated == false)
         {
             Destroy(gameObject);
@@ -73,6 +77,7 @@ public class MazeGenerator : MonoBehaviour
 
         for (int i = 0; i < isNeighborhoodVisited.Length; i++)
         {
+            //putting the neighbors in the array
             if(neighborhood[i] >= 0 && neighborhood[i] < blocksList.Count)
             {
                 if(blocksList[neighborhood[i]].tag == nonVisitedTag) isNeighborhoodVisited[i] = 0;
@@ -84,24 +89,32 @@ public class MazeGenerator : MonoBehaviour
 
         List<int> visitedIndexes = new List<int>();
         List<int> nonVisitedIndexes = new List<int>();
+        //adding the non visited neighbors in the nonVisitedIndexes list
         for (int i = 0; i < isNeighborhoodVisited.Length; i++)
         {
             if(isNeighborhoodVisited[i] == 0) nonVisitedIndexes.Add(i);
         }
-            
+        
+        //removing the possibility to go left if the current block is all to the left
         if(currentBlockIndex == currentLine * mazeSize && nonVisitedIndexes.Contains(3)) nonVisitedIndexes.Remove(3);
+        
+        //removing the possibility to go right if the current block is all to the right
         if(currentBlockIndex == ((currentLine + 1) * mazeSize) - 1 && nonVisitedIndexes.Contains(1)) nonVisitedIndexes.Remove(1);
 
         if (nonVisitedIndexes.Count != 0)
         {
+            //get the direction to go to
             int nextDirection = nonVisitedIndexes[Random.Range(0, nonVisitedIndexes.Count)];
 
+            //update the line the current block is in
             if(nextDirection == 2) currentLine += 1;
             else if(nextDirection == 0) currentLine -= 1;
 
             nextBlockIndex = neighborhood[nextDirection];
             
             //indexes: 0=back 1=right 2=front 3=left
+
+            //deactivating the walls on the blocks
             if(nextDirection - 2 >= 0) blocksList[nextBlockIndex].transform.GetChild(nextDirection - 2).gameObject.SetActive(false);
             else blocksList[nextBlockIndex].transform.GetChild(nextDirection + 2).gameObject.SetActive(false);
             blocksList[currentBlockIndex].transform.GetChild(nextDirection).gameObject.SetActive(false);
@@ -111,6 +124,7 @@ public class MazeGenerator : MonoBehaviour
             blocksList[currentBlockIndex].tag = visitedTag;
         }else
         {
+            //adding the visited neighbors in the visitedIndexes list
             for (int i = 0; i < isNeighborhoodVisited.Length; i++)
             {
                 if(isNeighborhoodVisited[i] == 1) visitedIndexes.Add(i);
@@ -125,20 +139,26 @@ public class MazeGenerator : MonoBehaviour
             {
                 switch (visitedIndexes[i])
                 {
+                    //indexes: 0=back 1=right 2=front 3=left
                     case 0:
-                        if(blocksList[neighborhood[0]].transform.GetChild(2).gameObject.activeInHierarchy == true) visitedIndexes.Remove(visitedIndexes[i]);
+                        if(blocksList[neighborhood[0]].transform.GetChild(2).gameObject.activeSelf == true) visitedIndexes.Remove(visitedIndexes[i]);
                         break;
                     case 1:
-                        if(blocksList[neighborhood[1]].transform.GetChild(3).gameObject.activeInHierarchy == true) visitedIndexes.Remove(visitedIndexes[i]);
+                        if(blocksList[neighborhood[1]].transform.GetChild(3).gameObject.activeSelf == true) visitedIndexes.Remove(visitedIndexes[i]);
                         break;
                     case 2:
-                        if(blocksList[neighborhood[2]].transform.GetChild(0).gameObject.activeInHierarchy == true) visitedIndexes.Remove(visitedIndexes[i]);
+                        if(blocksList[neighborhood[2]].transform.GetChild(0).gameObject.activeSelf == true) visitedIndexes.Remove(visitedIndexes[i]);
                         break;
                     case 3:
-                        if(blocksList[neighborhood[3]].transform.GetChild(1).gameObject.activeInHierarchy == true) visitedIndexes.Remove(visitedIndexes[i]);
+                        if(blocksList[neighborhood[3]].transform.GetChild(1).gameObject.activeSelf == true) visitedIndexes.Remove(visitedIndexes[i]);
                         break;
                 }
             }
+            //removing the possibility to go left if the current block is all to the left
+            if(currentBlockIndex == currentLine * mazeSize && visitedIndexes.Contains(3)) visitedIndexes.Remove(3);
+
+            //removing the possibility to go right if the current block is all to the right
+            if(currentBlockIndex == ((currentLine + 1) * mazeSize) - 1 && visitedIndexes.Contains(1)) visitedIndexes.Remove(1);
 
             int nextDirection = visitedIndexes[Random.Range(0, visitedIndexes.Count)];
     
@@ -149,6 +169,8 @@ public class MazeGenerator : MonoBehaviour
         }
         if(nonVisitedIndexes.Count == 0 && visitedIndexes.Count == 0)
         {
+            print("This should not happen!!");
+
             List<int> visited2Indexes = new List<int>();
 
             for (int i = 0; i < isNeighborhoodVisited.Length; i++)
@@ -174,6 +196,11 @@ public class MazeGenerator : MonoBehaviour
                         break;
                 }
             }
+            //removing the possibility to go left if the current block is all to the left
+            if(currentBlockIndex == currentLine * mazeSize && visited2Indexes.Contains(3)) visited2Indexes.Remove(3);
+
+            //removing the possibility to go right if the current block is all to the right
+            if(currentBlockIndex == ((currentLine + 1) * mazeSize) - 1 && visited2Indexes.Contains(1)) visited2Indexes.Remove(1);
 
             int nextDirection = visited2Indexes[Random.Range(0, visited2Indexes.Count)];
 
