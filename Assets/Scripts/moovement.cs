@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
-public class moovement : MonoBehaviour
+public class moovement : MonoBehaviourPunCallbacks
 {
     public float speed = 3f;
     public int jumpSelected;
@@ -12,6 +13,8 @@ public class moovement : MonoBehaviour
     public LayerMask groundMask;
     public Transform groundCheck;
     public float groundDistance;
+
+    public GameObject cam;
 
     public bool isGrounded;
     float movementSpeed;
@@ -29,16 +32,21 @@ public class moovement : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
         movementSpeed = speed;
+
+        if(photonView.IsMine) cam.SetActive(true);
     }
 
     // Update is called once per frame
     void Update()
     {
-        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
-        
-        if(canGravity) Gravity();
-        if(canMove) Move();
-        if(canJump) Jump();
+        if (photonView.IsMine)
+        {
+            isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
+            
+            if(canGravity) Gravity();
+            if(canMove) Move();
+            if(canJump) Jump();
+        }
     }
 
     void Move()

@@ -1498,6 +1498,7 @@ MonoBehaviour:
   roomNameInput: {fileID: 214628228}
   createRoomButton: {fileID: 84963627}
   mazeSizeInput: {fileID: 289681192}
+  roomText: {fileID: 2140055922}
   panels:
   - {fileID: 156001063}
   - {fileID: 1061634446}

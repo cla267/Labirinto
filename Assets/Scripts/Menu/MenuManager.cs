@@ -16,8 +16,11 @@ public class MenuManager : MonoBehaviourPunCallbacks
 
     [Header("Room")]
     public InputField mazeSizeInput;
+    public Text roomText;
 
     public GameObject[] panels;
+
+    bool inRoom;
 
     void Start()
     {
@@ -28,9 +31,15 @@ public class MenuManager : MonoBehaviourPunCallbacks
 
     void Update()
     {
-        if(Input.GetKeyDown(KeyCode.Return) && PhotonNetwork.IsMasterClient && int.TryParse(mazeSizeInput.text, out int number) && number <= 50)
+        if(Input.GetKeyDown(KeyCode.Return) && PhotonNetwork.IsMasterClient && int.TryParse(mazeSizeInput.text, out int number) && number <= 50 && number >= 3)
         {
             photonView.RPC("StartGame", RpcTarget.AllBuffered, number);
+        }
+
+        if(PhotonNetwork.IsMasterClient == false && inRoom)
+        {
+            mazeSizeInput.gameObject.SetActive(false);
+            roomText.text = "Waiting for master...";
         }
 
         createRoomButton.enabled = CheckInput(roomNameInput);
@@ -86,6 +95,7 @@ public class MenuManager : MonoBehaviourPunCallbacks
     public override void OnJoinedRoom()
     {
         LoadPanel("Room");
+        inRoom = true;
         // SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
     }
 #endregion

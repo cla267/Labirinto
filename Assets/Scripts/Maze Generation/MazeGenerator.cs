@@ -5,429 +5,178 @@ using Photon.Pun;
 
 public class MazeGenerator : MonoBehaviour
 {
-    public static GameObject currentBlock;
-    int currentBlockIndex;
-    int nextBlockIndex;
-    int currentLine;
-
     public GameObject block;
-    public GameObject player;
-    public static int mazeSize = 15;
-    public int falseReycasts = 0;
 
-    public static bool canBeGenerated = false;
+    public static int mazeSize = 40;
     public static bool isGenerated = false;
 
-    float positionX, positionZ, startX;
-    float seconds = 0f;
-    float avgFrameRate;
-    float delayTime;
-
-    public string nonVisitedTag;
-    public string visitedTag;
-    public string visited2Tag;
-    public string nonDestrucatbleTag;
-
-    public List<GameObject> blocksList;
-
-    public GameObject _currentBlock;
-
-    void Awake()
-    {
-        
-    }
+    Cell[,] grid = new Cell[mazeSize, mazeSize];
+    Cell currentCell;
+    Stack<Cell> stack = new Stack<Cell>();
     
+    bool isPlayerSpawned = false;
+
+    //back, right, front, left
+
     void Start()
     {
-        GenerateGrid();
-        blocksList.AddRange(GameObject.FindGameObjectsWithTag(nonVisitedTag));
-        GameObject startBlock = blocksList[0];
-        transform.position = startBlock.transform.position;
-        blocksList[0].tag = visitedTag;
+        if(PhotonNetwork.IsMasterClient)
+        {
+            for(int y = 0; y < mazeSize; y++)
+            {
+                for (int x = 0; x < mazeSize; x++)
+                {
+                    grid[y,x] = new Cell(x,y);
+                    grid[y,x].gameObject = PhotonNetwork.Instantiate("block", new Vector3(grid[y,x].x * 3, 0, grid[y,x].y * 3), Quaternion.identity);
+                }
+            }
+    
+            currentCell = grid[0,0];
+        }
     }
 
     void Update()
     {
-        _currentBlock = currentBlock;
-        
-        if(Input.GetKeyDown(KeyCode.E)) {GenerateMaze(); //print("Current block index: " + currentBlockIndex);
-        }
-
-        // if(blocksList.Contains(GameObject.FindGameObjectWithTag(nonVisitedTag)) && seconds >= 4)
-        // {
-        //     GenerateMaze();
-        //     seconds = 0;
-        // }
-        // seconds += 1;
-
-        //spawns the player on the network if the maze is finished (On the old method)
-        if(!blocksList.Contains(GameObject.FindGameObjectWithTag(nonVisitedTag)) && isGenerated == false)
+        if (PhotonNetwork.IsMasterClient && Input.GetKeyDown(KeyCode.Escape))
         {
-            Destroy(gameObject);
-            PhotonNetwork.Instantiate(player.name, blocksList[0].transform.position, Quaternion.identity);
-            isGenerated = true;
-        }
-    }
-
-    void GenerateMaze()
-    {
-        //indexes: 0=back 1=right 2=front 3=left
-        int[] neighborhood = new int[]{currentBlockIndex-mazeSize, currentBlockIndex+1, currentBlockIndex+mazeSize, currentBlockIndex-1};
-        int[] isNeighborhoodVisited = new int[4];
-
-        for (int i = 0; i < isNeighborhoodVisited.Length; i++)
-        {
-            //putting the neighbors in the array
-            if(neighborhood[i] >= 0 && neighborhood[i] < blocksList.Count)
-            {
-                if(blocksList[neighborhood[i]].tag == nonVisitedTag) isNeighborhoodVisited[i] = 0;
-                else if(blocksList[neighborhood[i]].tag == visitedTag) isNeighborhoodVisited[i] = 1;
-                else if(blocksList[neighborhood[i]].tag == visited2Tag) isNeighborhoodVisited[i] = 2;
-            }
-            else isNeighborhoodVisited[i] = 5;
-        }
-
-        List<int> visitedIndexes = new List<int>();
-        List<int> nonVisitedIndexes = new List<int>();
-        //adding the non visited neighbors in the nonVisitedIndexes list
-        for (int i = 0; i < isNeighborhoodVisited.Length; i++)
-        {
-            if(isNeighborhoodVisited[i] == 0) nonVisitedIndexes.Add(i);
-        }
-        
-        //removing the possibility to go left if the current block is all to the left
-        if(currentBlockIndex == currentLine * mazeSize && nonVisitedIndexes.Contains(3)) nonVisitedIndexes.Remove(3);
-        
-        //removing the possibility to go right if the current block is all to the right
-        if(currentBlockIndex == ((currentLine + 1) * mazeSize) - 1 && nonVisitedIndexes.Contains(1)) nonVisitedIndexes.Remove(1);
-
-        if (nonVisitedIndexes.Count != 0)
-        {
-            //get the direction to go to
-            int nextDirection = nonVisitedIndexes[Random.Range(0, nonVisitedIndexes.Count)];
-
-            //update the line the current block is in
-            if(nextDirection == 2) currentLine += 1;
-            else if(nextDirection == 0) currentLine -= 1;
-
-            nextBlockIndex = neighborhood[nextDirection];
+            currentCell.visited = true;
             
-            //indexes: 0=back 1=right 2=front 3=left
-
-            //deactivating the walls on the blocks
-            if(nextDirection - 2 >= 0) blocksList[nextBlockIndex].transform.GetChild(nextDirection - 2).gameObject.SetActive(false);
-            else blocksList[nextBlockIndex].transform.GetChild(nextDirection + 2).gameObject.SetActive(false);
-            blocksList[currentBlockIndex].transform.GetChild(nextDirection).gameObject.SetActive(false);
-    
-            currentBlockIndex = nextBlockIndex;
-    
-            blocksList[currentBlockIndex].tag = visitedTag;
-        }else
-        {
-            //adding the visited neighbors in the visitedIndexes list
-            for (int i = 0; i < isNeighborhoodVisited.Length; i++)
+            List<Cell> neighbours = GetNonVisitedNeighbours(currentCell);
+            if(neighbours.Count != 0)
             {
-                if(isNeighborhoodVisited[i] == 1) visitedIndexes.Add(i);
+                Cell nextCell = neighbours[Random.Range(0,neighbours.Count)];
+                stack.Push(currentCell);
+                DestroyWalls(currentCell, nextCell);
+                currentCell = nextCell;
             }
-        }
-
-        if(nonVisitedIndexes.Count == 0 && visitedIndexes.Count != 0)
-        {
-            blocksList[currentBlockIndex].tag = visited2Tag;
-
-            for (int i = 0; i < visitedIndexes.Count; i++)
+            else if(stack.Count != 0)
             {
-                switch (visitedIndexes[i])
+                currentCell = stack.Pop();
+            }
+            else
+            {
+                isGenerated = true;
+                if (!isPlayerSpawned)
                 {
-                    //indexes: 0=back 1=right 2=front 3=left
-                    case 0:
-                        if(blocksList[neighborhood[0]].transform.GetChild(2).gameObject.activeSelf == true) visitedIndexes.Remove(visitedIndexes[i]);
-                        break;
-                    case 1:
-                        if(blocksList[neighborhood[1]].transform.GetChild(3).gameObject.activeSelf == true) visitedIndexes.Remove(visitedIndexes[i]);
-                        break;
-                    case 2:
-                        if(blocksList[neighborhood[2]].transform.GetChild(0).gameObject.activeSelf == true) visitedIndexes.Remove(visitedIndexes[i]);
-                        break;
-                    case 3:
-                        if(blocksList[neighborhood[3]].transform.GetChild(1).gameObject.activeSelf == true) visitedIndexes.Remove(visitedIndexes[i]);
-                        break;
+                    GameObject player = PhotonNetwork.Instantiate("Player", new Vector3(0,1,0), Quaternion.identity);
+                    isPlayerSpawned = true;
+                    // List<string>[,] newWalls = new List<string>[mazeSize, mazeSize];
+                    // int[,] newX = new int[mazeSize, mazeSize];
+                    // int[,] newY = new int[mazeSize, mazeSize];
+                    // for (int y = 0; y < mazeSize; y++)
+                    // {
+                    //     for (int x = 0; x < mazeSize; x++)
+                    //     {
+                    //         newWalls[y,x] = grid[y,x].walls;
+                    //         newX[y,x] = grid[y,x].x;
+                    //         newY[y,x] = grid[y,x].y;
+                    //     }
+                    // }
+                    // player.GetComponent<PhotonView>().RPC("Ready", RpcTarget.AllBuffered, newWalls, newX, newY);
                 }
             }
-            //removing the possibility to go left if the current block is all to the left
-            if(currentBlockIndex == currentLine * mazeSize && visitedIndexes.Contains(3)) visitedIndexes.Remove(3);
-
-            //removing the possibility to go right if the current block is all to the right
-            if(currentBlockIndex == ((currentLine + 1) * mazeSize) - 1 && visitedIndexes.Contains(1)) visitedIndexes.Remove(1);
-
-            int nextDirection = visitedIndexes[Random.Range(0, visitedIndexes.Count)];
-    
-            if(nextDirection == 2) currentLine += 1;
-            else if(nextDirection == 0) currentLine -= 1;
-    
-            currentBlockIndex = neighborhood[nextDirection];
+            // Debug.Log($"X: {currentCell.x} - Y: {currentCell.y}");
         }
-        if(nonVisitedIndexes.Count == 0 && visitedIndexes.Count == 0)
+        else if(isPlayerSpawned)
         {
-            print("This should not happen!!");
-
-            List<int> visited2Indexes = new List<int>();
-
-            for (int i = 0; i < isNeighborhoodVisited.Length; i++)
+            for (int y = 0; y < mazeSize; y++)
             {
-                if(isNeighborhoodVisited[i] == 2) visited2Indexes.Add(i);
-            }
-
-            for (int i = 0; i < visited2Indexes.Count; i++)
-            {
-                switch (visited2Indexes[i])
+                for (int x = 0; x < mazeSize; x++)
                 {
-                    case 0:
-                        if(blocksList[neighborhood[0]].transform.GetChild(2).gameObject.activeInHierarchy == true) visited2Indexes.Remove(visited2Indexes[i]);
-                        break;
-                    case 1:
-                        if(blocksList[neighborhood[1]].transform.GetChild(3).gameObject.activeInHierarchy == true) visited2Indexes.Remove(visited2Indexes[i]);
-                        break;
-                    case 2:
-                        if(blocksList[neighborhood[2]].transform.GetChild(0).gameObject.activeInHierarchy == true) visited2Indexes.Remove(visited2Indexes[i]);
-                        break;
-                    case 3:
-                        if(blocksList[neighborhood[3]].transform.GetChild(1).gameObject.activeInHierarchy == true) visited2Indexes.Remove(visited2Indexes[i]);
-                        break;
+                    grid[y,x].gameObject = Instantiate(block, new Vector3(grid[y,x].x * 3, 0, grid[y,x].y * 3), Quaternion.identity);
+                    List<string> allWalls = new List<string>(){"bottom", "right", "front", "left"};
+                    List<string> wallsToRemove = allWalls;
+                    for (int i = 0; i < grid[y,x].walls.Count; i++)
+                    {
+                        wallsToRemove.Remove(grid[y,x].walls[i]);
+                    }
+                    for (int i = 0; i < wallsToRemove.Count; i++)
+                    {
+                        switch(wallsToRemove[i])
+                        {
+                            case "bottom":
+                                Destroy(grid[y,x].gameObject.transform.GetChild(allWalls.FindIndex(a => a.Contains("bottom"))).gameObject);
+                                allWalls.Remove("bottom");
+                                break;
+                            case "right":
+                                Destroy(grid[y,x].gameObject.transform.GetChild(allWalls.FindIndex(a => a.Contains("right"))).gameObject);
+                                allWalls.Remove("right");
+                                break;
+                            case "front":
+                                Destroy(grid[y,x].gameObject.transform.GetChild(allWalls.FindIndex(a => a.Contains("front"))).gameObject);
+                                allWalls.Remove("front");
+                                break;
+                            case "left":
+                                Destroy(grid[y,x].gameObject.transform.GetChild(allWalls.FindIndex(a => a.Contains("left"))).gameObject);
+                                allWalls.Remove("left");
+                                break;
+                        }
+                    }
                 }
             }
-            //removing the possibility to go left if the current block is all to the left
-            if(currentBlockIndex == currentLine * mazeSize && visited2Indexes.Contains(3)) visited2Indexes.Remove(3);
-
-            //removing the possibility to go right if the current block is all to the right
-            if(currentBlockIndex == ((currentLine + 1) * mazeSize) - 1 && visited2Indexes.Contains(1)) visited2Indexes.Remove(1);
-
-            int nextDirection = visited2Indexes[Random.Range(0, visited2Indexes.Count)];
-
-            if(nextDirection == 2) currentLine += 1;
-            else if(nextDirection == 0) currentLine -= 1;
-    
-            currentBlockIndex = neighborhood[nextDirection];
+            isPlayerSpawned = false;
         }
-
-        
     }
-
-#region VecchioMetodo
-
-    // void GenerateMaze()
-    // {
-        // for (int i = 0; i < blocksList.Capacity; i++)
-        // {
-        //     if(blocksList[i].tag == nonVisitedTag)
-        //     {
-        //         blocksList[i].layer = LayerMask.NameToLayer(nonVisitedTag);
-        //     } else if(blocksList[i].tag == visitedTag)
-        //     {
-        //         blocksList[i].layer = LayerMask.NameToLayer(visitedTag);
-        //     }else if(blocksList[i].tag == visited2Tag)
-        //     {
-        //         blocksList[i].layer = LayerMask.NameToLayer(visited2Tag);
-        //     }else
-        //     {
-        //         Debug.LogError("Block " + blocksList[i].name + " needs to be set as visited or non visited");
-        //     }
-        //     for (int t = 0; t < blocksList[i].transform.childCount; t++)
-        //     {
-        //         if (blocksList[i].transform.GetChild(t).tag != "Non Destructable")
-        //         {
-        //             blocksList[i].transform.GetChild(t).tag = blocksList[i].tag;
-        //             blocksList[i].transform.GetChild(t).gameObject.layer = blocksList[i].layer;
-        //         }
-        //     }
-        // }
-
-        // bool[] raycasts = new bool[4]; // firs one is forward, then left, then right, then back
-
-        // raycasts[0] = Physics.Raycast(transform.position, Vector3.forward, 4, LayerMask.GetMask(nonVisitedTag));
-        // raycasts[1] = Physics.Raycast(transform.position, Vector3.left, 4, LayerMask.GetMask(nonVisitedTag));
-        // raycasts[2] = Physics.Raycast(transform.position, Vector3.right, 4, LayerMask.GetMask(nonVisitedTag));
-        // raycasts[3] = Physics.Raycast(transform.position, Vector3.back, 4, LayerMask.GetMask(nonVisitedTag));
-
-        // for (int i = 0; i < raycasts.Length; i++)
-        // {
-        //     if (raycasts[i] == false)
-        //     {
-        //         falseReycasts++;
-        //     }
-        // }
-
-        // if(falseReycasts == 4) 
-        // {
-        //     falseReycasts = 0;
-        //     currentBlock.tag = visited2Tag;
-        //     currentBlock.layer = LayerMask.NameToLayer(visited2Tag);
-        //     GoBack();
-        //     return;
-        // }
-        // else
-        // {
-        //     falseReycasts = 0;
-        // }
-
-        // int nextDirection = Random.Range(0, 4);
-
-        // while(raycasts[nextDirection] == false)
-        // {
-        //     nextDirection = Random.Range(0, 4);
-        // }
-        // // print("forward: " + raycasts[0] + "; left: " + raycasts[1] + "; right: " + raycasts[2] + "; back: " + raycasts[3] + ";");
-
-        // StartCoroutine(Move(nextDirection));
-
-        // print(nextDirection);
-    // }
-
-    // void GoBack()
-    // {
-    //     bool[] raycasts = new bool[4];
-
-    //     raycasts[0] = Physics.Raycast(transform.position, Vector3.forward, 1.7f);
-    //     raycasts[1] = Physics.Raycast(transform.position, Vector3.left, 1.7f);
-    //     raycasts[2] = Physics.Raycast(transform.position, Vector3.right, 1.7f);
-    //     raycasts[3] = Physics.Raycast(transform.position, Vector3.back, 1.7f);
-
-    //     for (int index = 0; index < raycasts.Length; index++)
-    //     {
-    //         if(raycasts[index] == false)
-    //         {
-    //             if(index == 0)
-    //             {
-    //                 Physics.Raycast(transform.position, Vector3.forward, out RaycastHit hit, 4);
-    //                 if(hit.transform.parent.gameObject.tag == visited2Tag)
-    //                 {
-    //                     raycasts[index] = true;
-    //                 }
-    //             }else if(index == 1)
-    //             {
-    //                 Physics.Raycast(transform.position, Vector3.left, out RaycastHit hit, 4);
-    //                 if(hit.transform.parent.gameObject.tag == visited2Tag)
-    //                 {
-    //                     raycasts[index] = true;
-    //                 }
-    //             }else if(index == 2)
-    //             {
-    //                 Physics.Raycast(transform.position, Vector3.right, out RaycastHit hit, 4);
-    //                 if(hit.transform.parent.gameObject.tag == visited2Tag)
-    //                 {
-    //                     raycasts[index] = true;
-    //                 }
-    //             }else
-    //             {
-    //                 Physics.Raycast(transform.position, Vector3.back, out RaycastHit hit, 4);
-    //                 if(hit.transform.parent.gameObject.tag == visited2Tag)
-    //                 {
-    //                     raycasts[index] = true;
-    //                 }
-    //             }
-    //         }
-    //     }
-
-    //     int nextDirection = Random.Range(0, 4);
-
-    //     while(raycasts[nextDirection] == true)
-    //     {
-    //         nextDirection = Random.Range(0, 4);
-    //     }
-    //     // print("forward: " + raycasts[0] + "; left: " + raycasts[1] + "; right: " + raycasts[2] + "; back: " + raycasts[3] + ";");
-
-    //     StartCoroutine(Move(nextDirection));
-    // }
-
-    // IEnumerator MakeWalls()
-    // {
-    //     int i = 1;
-    //     while(i < mazeSize)
-    //     {
-    //         wallMaker.transform.localPosition = new Vector3(wallMaker.transform.position.x + 3, wallMaker.transform.position.y, wallMaker.transform.position.z);
-    //         i++;
-    //         yield return null;
-    //     }
-    //     i = 1;
-    //     wallMaker.transform.position = new Vector3(wallMaker.transform.position.x + 1.5f, wallMaker.transform.position.y, wallMaker.transform.position.z + 1.5f);
-    //     yield return null;
-    //     while (i < mazeSize)
-    //     {
-    //         wallMaker.transform.localPosition = new Vector3(wallMaker.transform.position.x, wallMaker.transform.position.y, wallMaker.transform.position.z + 3);
-    //         i++;
-    //         yield return null;
-    //     }
-    //     i = 1;
-    //     wallMaker.transform.position = new Vector3(wallMaker.transform.position.x - 1.5f, wallMaker.transform.position.y, wallMaker.transform.position.z + 1.5f);
-    //     yield return null;
-    //     while (i < mazeSize)
-    //     {
-    //         wallMaker.transform.localPosition = new Vector3(wallMaker.transform.position.x - 3, wallMaker.transform.position.y, wallMaker.transform.position.z);
-    //         i++;
-    //         yield return null;
-    //     }
-    //     i = 1;
-    //     wallMaker.transform.position = new Vector3(wallMaker.transform.position.x - 1.5f, wallMaker.transform.position.y, wallMaker.transform.position.z - 1.5f);
-    //     yield return null;
-    //     while (i < mazeSize)
-    //     {
-    //         wallMaker.transform.localPosition = new Vector3(wallMaker.transform.position.x, wallMaker.transform.position.y, wallMaker.transform.position.z - 3);
-    //         i++;
-    //         yield return null;
-    //     }
-    //     Destroy(wallMaker);
-    //     canBeGenerated = true;
-    // }
-
-    // IEnumerator Move(int direction)
-    // {
-    //     if(direction == 0)
-    //     {
-    //         transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z + 1.5f);
-    //         yield return null;
-    //         transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z + 1.5f);
-    //     } else if(direction == 1)
-    //     {
-    //         transform.position = new Vector3(transform.position.x - 1.5f, transform.position.y, transform.position.z);
-    //         yield return null;
-    //         transform.position = new Vector3(transform.position.x - 1.5f, transform.position.y, transform.position.z);
-    //     } else if(direction == 2)
-    //     {
-    //         transform.position = new Vector3(transform.position.x + 1.5f, transform.position.y, transform.position.z);
-    //         yield return null;
-    //         transform.position = new Vector3(transform.position.x + 1.5f, transform.position.y, transform.position.z);
-    //     } else
-    //     {
-    //         transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z - 1.5f);
-    //         yield return null;
-    //         transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z - 1.5f);
-    //     }
-    // }
-#endregion
-
-    void GenerateGrid()
+    
+    void DestroyWalls(Cell startCell, Cell endCell)
     {
-        positionX = -((float)(mazeSize - 1) * 3) * 0.5f;
-        startX = positionX;
-        positionZ = -((float)(mazeSize - 1) * 3) * 0.5f;
-
-        for (int i = 0; i < mazeSize; i++)
-        {
-            for(int t = 0; t < mazeSize; t++)
-            {
-                Instantiate(block, new Vector3(positionX, 0, positionZ), Quaternion.identity);
-                positionX += 3;
-            }
-
-            positionZ += 3;
-            positionX = startX;
+        int x = startCell.x - endCell.x;
+        switch(x){
+            case -1:
+                PhotonNetwork.Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("right"))).gameObject);
+                startCell.walls.Remove("right");
+                PhotonNetwork.Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("left"))).gameObject);
+                endCell.walls.Remove("left");
+                break;
+            case 1:
+                PhotonNetwork.Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("left"))).gameObject);
+                startCell.walls.Remove("left");
+                PhotonNetwork.Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("right"))).gameObject);
+                endCell.walls.Remove("right");
+                break;
+        }
+        int y = startCell.y - endCell.y;
+        switch(y){
+            case -1:
+                PhotonNetwork.Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("front"))).gameObject);
+                startCell.walls.Remove("front");
+                PhotonNetwork.Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("bottom"))).gameObject);
+                endCell.walls.Remove("bottom");
+                break;
+            case 1:
+                PhotonNetwork.Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("bottom"))).gameObject);
+                startCell.walls.Remove("bottom");
+                PhotonNetwork.Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("front"))).gameObject);
+                endCell.walls.Remove("front");
+                break;
         }
     }
 
-    // private void OnTriggerStay(Collider other) {
-    //     if (!other.CompareTag(nonDestrucatbleTag))
-    //     {
-    //         Destroy(other.gameObject);
-    //     }
-    // }
+    List<Cell> GetNonVisitedNeighbours(Cell cell)
+    {
+        List<Cell> toReturn = new List<Cell>();
+        //bottom
+        if(cell.y > 0 && grid[cell.y - 1, cell.x].visited == false) toReturn.Add(grid[currentCell.y - 1, currentCell.x]);
+        //front
+        if(cell.y < mazeSize - 1 && grid[cell.y + 1, cell.x].visited == false) toReturn.Add(grid[currentCell.y + 1, currentCell.x]);
+        //left
+        if(cell.x > 0 && grid[cell.y, cell.x - 1].visited == false) toReturn.Add(grid[currentCell.y, currentCell.x - 1]);
+        //right
+        if(cell.x < mazeSize - 1 && grid[cell.y, cell.x + 1].visited == false) toReturn.Add(grid[currentCell.y, currentCell.x + 1]);
+        return toReturn;
+    }
+
+    [PunRPC]
+    void Ready(List<string>[,] walls, int[,] _x, int[,] _y)
+    {
+        isPlayerSpawned = true;
+        for (int y = 0; y < mazeSize; y++)
+        {
+            for (int x = 0; x < mazeSize; x++)
+            {
+                grid[y,x] = new Cell(_x[y,x],_y[y,x]);
+                grid[y,x].walls = walls[y,x];
+            }
+        }
+    }
 }

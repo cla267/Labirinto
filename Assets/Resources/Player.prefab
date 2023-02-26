@@ -19,7 +19,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2744415548635086609
 Transform:
   m_ObjectHideFlags: 0
@@ -144,7 +144,7 @@ GameObject:
   - component: {fileID: 1412242976459599644}
   - component: {fileID: 5741582575916990187}
   - component: {fileID: 6569122851609793093}
-  - component: {fileID: 6524249062383093283}
+  - component: {fileID: -5003401399017852694}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -208,6 +208,7 @@ MonoBehaviour:
     m_Bits: 8
   groundCheck: {fileID: 2510373096393443413}
   groundDistance: 0.18
+  cam: {fileID: 2536115277099764196}
   isGrounded: 0
 --- !u!114 &6569122851609793093
 MonoBehaviour:
@@ -227,11 +228,12 @@ MonoBehaviour:
   Synchronization: 3
   OwnershipTransfer: 0
   observableSearch: 2
-  ObservedComponents: []
+  ObservedComponents:
+  - {fileID: -5003401399017852694}
   sceneViewId: 0
   InstantiationId: 0
   isRuntimeInstantiated: 0
---- !u!114 &6524249062383093283
+--- !u!114 &-5003401399017852694
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -240,9 +242,30 @@ MonoBehaviour:
   m_GameObject: {fileID: 2678057938272484446}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c1f39f847b7159499f6f91ee7149cd4, type: 3}
+  m_Script: {fileID: 11500000, guid: 8efc6b1d64977384eb3405357896c656, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  m_PositionModel:
+    SynchronizeEnabled: 1
+    TeleportEnabled: 1
+    TeleportIfDistanceGreaterThan: 3
+    InterpolateOption: 2
+    InterpolateMoveTowardsSpeed: 1
+    InterpolateLerpSpeed: 1
+    ExtrapolateOption: 0
+    ExtrapolateSpeed: 1
+    ExtrapolateIncludingRoundTripTime: 1
+    ExtrapolateNumberOfStoredPositions: 1
+  m_RotationModel:
+    SynchronizeEnabled: 1
+    InterpolateOption: 2
+    InterpolateRotateTowardsSpeed: 180
+    InterpolateLerpSpeed: 5
+  m_ScaleModel:
+    SynchronizeEnabled: 0
+    InterpolateOption: 0
+    InterpolateMoveTowardsSpeed: 1
+    InterpolateLerpSpeed: 0
 --- !u!1 &2873145514530694725
 GameObject:
   m_ObjectHideFlags: 0

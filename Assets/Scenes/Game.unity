@@ -727,6 +727,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74fe21bf1fc04044d9065b9cb8ec00d2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  fpsCount: {fileID: 0}
 --- !u!114 &1342402217
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -954,16 +955,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   block: {fileID: 2514590573860989460, guid: 43dff0e7bed1c9a4c8d60f0300480d66, type: 3}
-  player: {fileID: 2678057938272484446, guid: 9614439e9e1771b44ba2fcdde54991b4, type: 3}
-  falseReycasts: 0
-  nonVisitedTag: Non Visited
-  visitedTag: Visited
-  visited2Tag: Visited2
-  wallMakerTag: WallMaker
-  nonDestrucatbleTag: Non Destructable
-  blocksList: []
-  wallMaker: {fileID: 1937523982866726559, guid: 167f1733f2b96944c8a9b8cd8d7320a0, type: 3}
-  _currentBlock: {fileID: 0}
 --- !u!224 &2121672572
 RectTransform:
   m_ObjectHideFlags: 0
