@@ -31,7 +31,7 @@ public class MenuManager : MonoBehaviourPunCallbacks
 
     void Update()
     {
-        if(Input.GetKeyDown(KeyCode.Return) && PhotonNetwork.IsMasterClient && int.TryParse(mazeSizeInput.text, out int number) && number <= 50 && number >= 3)
+        if(Input.GetKeyDown(KeyCode.Return) && PhotonNetwork.IsMasterClient && int.TryParse(mazeSizeInput.text, out int number) && number <= 100 && number >= 3)
         {
             photonView.RPC("StartGame", RpcTarget.AllBuffered, number);
         }
