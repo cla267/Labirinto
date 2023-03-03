@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 
-public class MazeGenerator : MonoBehaviourPunCallbacks, IPunObservable
+public class MazeGenerator : MonoBehaviourPunCallbacks
 {
     public GameObject block;
 
@@ -21,6 +21,10 @@ public class MazeGenerator : MonoBehaviourPunCallbacks, IPunObservable
     int[] newY = new int[mazeSize*mazeSize];
     string[] newWalls = new string[mazeSize*mazeSize];
 
+    private List<MeshFilter> sourceMeshFilters = new List<MeshFilter>();
+    [SerializeField]
+    private MeshFilter targetMeshFilter;
+
     //back, right, front, left
 
     void Start()
@@ -32,13 +36,18 @@ public class MazeGenerator : MonoBehaviourPunCallbacks, IPunObservable
                 for (int x = 0; x < mazeSize; x++)
                 {
                     grid[y,x] = new Cell(x,y);
-                    grid[y,x].gameObject = Instantiate(block, new Vector3(grid[y,x].x * 3, 0, grid[y,x].y * 3), Quaternion.identity);
+                    // grid[y,x].gameObject = Instantiate(block, new Vector3(grid[y,x].x * 3, 0, grid[y,x].y * 3), Quaternion.identity);
                 }
             }
     
             currentCell = grid[0,0];
             master = true;
         }
+
+        GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        floor.transform.position = new Vector3(mazeSize/2*3-1.5f, 0, mazeSize/2*3-1.5f);
+        floor.transform.localScale = new Vector3(mazeSize*3/10,1,mazeSize*3/10);
+        floor.layer = 3;
     }
 
     void Update()
@@ -70,6 +79,35 @@ public class MazeGenerator : MonoBehaviourPunCallbacks, IPunObservable
                     {
                         for (int x = 0; x < mazeSize; x++)
                         {
+                            grid[y,x].gameObject = Instantiate(block, new Vector3(grid[y,x].x * 3, 0, grid[y,x].y * 3), Quaternion.identity);
+                            List<string> wallsToRemove = new List<string>(){"bottom", "right", "front", "left"};
+                            for (int t = 0; t < grid[y,x].walls.Count; t++)
+                            {
+                                wallsToRemove.Remove(grid[y,x].walls[t]);
+                            }
+                            for (int t = 0; t < wallsToRemove.Count; t++)
+                            {
+                                List<string> allWalls = new List<string>(){"bottom", "right", "front", "left"};
+                                switch(wallsToRemove[t])
+                                {
+                                    case "bottom":
+                                        Destroy(grid[y,x].gameObject.transform.GetChild(allWalls.FindIndex(a => a.Contains("bottom"))).gameObject);
+                                        allWalls.Remove("bottom");
+                                        break;
+                                    case "right":
+                                        Destroy(grid[y,x].gameObject.transform.GetChild(allWalls.FindIndex(a => a.Contains("right"))).gameObject);
+                                        allWalls.Remove("right");
+                                        break;
+                                    case "front":
+                                        Destroy(grid[y,x].gameObject.transform.GetChild(allWalls.FindIndex(a => a.Contains("front"))).gameObject);
+                                        allWalls.Remove("front");
+                                        break;
+                                    case "left":
+                                        Destroy(grid[y,x].gameObject.transform.GetChild(allWalls.FindIndex(a => a.Contains("left"))).gameObject);
+                                        allWalls.Remove("left");
+                                        break;
+                                }
+                            }
                             int i = y * mazeSize + x;
                             newX[i] = grid[y,x].x;
                             newY[i] = grid[y,x].y;
@@ -97,11 +135,6 @@ public class MazeGenerator : MonoBehaviourPunCallbacks, IPunObservable
                     grid[y,x] = new Cell(newX[index], newY[index]);
                     List<string> walls =  new List<string>(newWalls[index].Split(','));
                     grid[y,x].walls = walls;
-                    // Debug.Log($"X: {grid[y,x].x} - Y: {grid[y,x].y}");
-                    // for (int t = 0; t < grid[y,x].walls.Count; t++)
-                    // {
-                    //     Debug.Log(grid[y,x].walls[t]);
-                    // }
                 }
             }
             for (int y = 0; y < mazeSize; y++)
@@ -154,30 +187,30 @@ public class MazeGenerator : MonoBehaviourPunCallbacks, IPunObservable
         int x = startCell.x - endCell.x;
         switch(x){
             case -1:
-                Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("right"))).gameObject);
+                // Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("right"))).gameObject);
                 startCell.walls.Remove("right");
-                Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("left"))).gameObject);
+                // Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("left"))).gameObject);
                 endCell.walls.Remove("left");
                 break;
             case 1:
-                Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("left"))).gameObject);
+                // Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("left"))).gameObject);
                 startCell.walls.Remove("left");
-                Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("right"))).gameObject);
+                // Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("right"))).gameObject);
                 endCell.walls.Remove("right");
                 break;
         }
         int y = startCell.y - endCell.y;
         switch(y){
             case -1:
-                Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("front"))).gameObject);
+                // Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("front"))).gameObject);
                 startCell.walls.Remove("front");
-                Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("bottom"))).gameObject);
+                // Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("bottom"))).gameObject);
                 endCell.walls.Remove("bottom");
                 break;
             case 1:
-                Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("bottom"))).gameObject);
+                // Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("bottom"))).gameObject);
                 startCell.walls.Remove("bottom");
-                Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("front"))).gameObject);
+                // Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("front"))).gameObject);
                 endCell.walls.Remove("front");
                 break;
         }
@@ -204,35 +237,5 @@ public class MazeGenerator : MonoBehaviourPunCallbacks, IPunObservable
         newX = _x;
         newY = _y;
         newWalls = _walls;
-    }
-    // [PunRPC]
-    // void Ready(/*List<string>[,] walls,*/ int[,] _x, int[,] _y)
-    // {
-    //     isPlayerSpawned = true;
-    //     for (int y = 0; y < mazeSize; y++)
-    //     {
-    //         for (int x = 0; x < mazeSize; x++)
-    //         {
-    //             grid[y,x] = new Cell(_x[y,x],_y[y,x]);
-    //             // grid[y,x].walls = walls[y,x];
-    //         }
-    //     }
-    // }
-
-    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
-    {
-        // if(stream.IsWriting)
-        // {
-        //     stream.SendNext(isPlayerSpawned);
-        //     if (isPlayerSpawned)
-        //     {
-        //         stream.SendNext(grid);
-        //     }
-        // }
-        // if(stream.IsReading)
-        // {
-        //     isPlayerSpawned = (bool)stream.ReceiveNext();
-        //     grid = (Cell[,])stream.ReceiveNext();
-        // }
     }
 }

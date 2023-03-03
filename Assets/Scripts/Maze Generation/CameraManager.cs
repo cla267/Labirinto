@@ -23,7 +23,7 @@ public class CameraManager : MonoBehaviour
     void Update()
     {
         cam.orthographicSize = ((float) MazeGenerator.mazeSize * 40f) / 25f;
-        cam.transform.position = new Vector3((MazeGenerator.mazeSize - 1) * 3 / 2, cam.transform.position.y, (MazeGenerator.mazeSize - 1) * 3 / 2);
+        cam.transform.position = new Vector3(MazeGenerator.mazeSize * 3 / 2 -1.5f, cam.transform.position.y, MazeGenerator.mazeSize * 3 / 2 -1.5f);
 
         if(Input.GetKeyDown(KeyCode.M) && isMapping == false)
         {

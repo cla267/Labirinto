@@ -15,6 +15,7 @@ public class moovement : MonoBehaviourPunCallbacks
     public float groundDistance;
 
     public GameObject cam;
+    public GameObject[] accessories;
 
     public bool isGrounded;
     float movementSpeed;
@@ -33,7 +34,13 @@ public class moovement : MonoBehaviourPunCallbacks
         controller = GetComponent<CharacterController>();
         movementSpeed = speed;
 
-        if(photonView.IsMine) cam.SetActive(true);
+        if(photonView.IsMine) {
+            cam.SetActive(true);
+            for (int i = 0; i < accessories.Length; i++)
+            {
+                accessories[i].GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+            }
+        }
     }
 
     // Update is called once per frame
