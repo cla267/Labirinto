@@ -2,10 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
+using UnityEngine.Rendering;
 
 public class MazeGenerator : MonoBehaviourPunCallbacks
 {
     public GameObject block;
+    public GameObject floor;
 
     public static int mazeSize = 40;
     public static bool isGenerated = false;
@@ -13,6 +15,8 @@ public class MazeGenerator : MonoBehaviourPunCallbacks
     Cell[,] grid = new Cell[mazeSize, mazeSize];
     Cell currentCell;
     Stack<Cell> stack = new Stack<Cell>();
+    [HideInInspector]
+    public GameObject player;
     
     bool isPlayerSpawned = false;
     bool master;
@@ -22,8 +26,6 @@ public class MazeGenerator : MonoBehaviourPunCallbacks
     string[] newWalls = new string[mazeSize*mazeSize];
 
     private List<MeshFilter> sourceMeshFilters = new List<MeshFilter>();
-    [SerializeField]
-    private MeshFilter targetMeshFilter;
 
     //back, right, front, left
 
@@ -44,7 +46,6 @@ public class MazeGenerator : MonoBehaviourPunCallbacks
             master = true;
         }
 
-        GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
         floor.transform.position = new Vector3(mazeSize/2*3-1.5f, 0, mazeSize/2*3-1.5f);
         floor.transform.localScale = new Vector3(mazeSize*3/10,1,mazeSize*3/10);
         floor.layer = 3;
@@ -73,7 +74,7 @@ public class MazeGenerator : MonoBehaviourPunCallbacks
                 isGenerated = true;
                 if (!isPlayerSpawned)
                 {
-                    GameObject player = PhotonNetwork.Instantiate("Player", new Vector3(0,1,0), Quaternion.identity);
+                    player = PhotonNetwork.Instantiate("Player", new Vector3(0,1,0), Quaternion.identity);
                     isPlayerSpawned = true;
                     for (int y = 0; y < mazeSize; y++)
                     {
@@ -177,7 +178,7 @@ public class MazeGenerator : MonoBehaviourPunCallbacks
                 }
             }
             isGenerated = true;
-            GameObject player = PhotonNetwork.Instantiate("Player", new Vector3(0,1,0), Quaternion.identity);
+            player = PhotonNetwork.Instantiate("Player", new Vector3(0,1,0), Quaternion.identity);
             isPlayerSpawned = false;
         }
     }

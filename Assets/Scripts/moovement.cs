@@ -62,7 +62,7 @@ public class moovement : MonoBehaviourPunCallbacks
         float z = Input.GetAxisRaw("Vertical");
 
         Vector2 axis = new Vector2(x, z).normalized;
-        Vector3 move = transform.right * axis.x + transform. forward * axis.y;
+        Vector3 move = transform.right * axis.x + transform.forward * axis.y;
 
         controller.Move(move * speed * Time.deltaTime);
     }
