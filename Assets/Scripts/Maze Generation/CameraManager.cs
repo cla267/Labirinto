@@ -28,22 +28,25 @@ public class CameraManager : MonoBehaviour
         cam.orthographicSize = ((float) MazeGenerator.mazeSize * 40f) / 25f;
         cam.transform.position = new Vector3(MazeGenerator.mazeSize * 3 / 2 -1.5f, cam.transform.position.y, MazeGenerator.mazeSize * 3 / 2 -1.5f);
 
-        if(Input.GetKeyDown(KeyCode.M) && isMapping == false)
-        {
-            map.SetActive(true);
-            moovement.canJump = false;
-            moovement.canMove = false;
-            foreach(MeshRenderer wallRenderer in wallsRenderer) wallRenderer.enabled = true;
-            isMapping = true;
-        }else if(Input.GetKeyDown(KeyCode.M) && isMapping == true)
-        {
-            map.SetActive(false);
-            moovement.canJump = true;
-            moovement.canMove = true;
-            foreach(MeshRenderer wallRenderer in wallsRenderer) wallRenderer.enabled = false;
-            mazeManager.GetComponent<MazeGenerator>().player.transform.GetChild(1).GetComponent<DinamicOcclusionCulling>().CheckWallsFunction();
-            isMapping = false;
-        }
+        // if (!isLoading)
+        // {
+            if(Input.GetKeyDown(KeyCode.M) && isMapping == false)
+            {
+                map.SetActive(true);
+                moovement.canJump = false;
+                moovement.canMove = false;
+                foreach(MeshRenderer wallRenderer in wallsRenderer) wallRenderer.enabled = true;
+                isMapping = true;
+            }else if(Input.GetKeyDown(KeyCode.M) && isMapping == true)
+            {
+                map.SetActive(false);
+                moovement.canJump = true;
+                moovement.canMove = true;
+                foreach(MeshRenderer wallRenderer in wallsRenderer) wallRenderer.enabled = false;
+                mazeManager.GetComponent<MazeGenerator>().player.transform.GetChild(1).GetComponent<DinamicOcclusionCulling>().CheckWallsFunction();
+                isMapping = false;
+            }
+        // }
 
         isLoading = !MazeGenerator.isGenerated;
 

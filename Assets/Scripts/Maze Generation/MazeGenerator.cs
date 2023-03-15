@@ -12,7 +12,7 @@ public class MazeGenerator : MonoBehaviourPunCallbacks
     public static int mazeSize = 40;
     public static bool isGenerated = false;
 
-    Cell[,] grid = new Cell[mazeSize, mazeSize];
+    public static Cell[,] grid = new Cell[mazeSize, mazeSize];
     Cell currentCell;
     Stack<Cell> stack = new Stack<Cell>();
     [HideInInspector]
@@ -142,19 +142,15 @@ public class MazeGenerator : MonoBehaviourPunCallbacks
             {
                 for (int x = 0; x < mazeSize; x++)
                 {
-                    Debug.Log(y * mazeSize + x);
                     grid[y,x].gameObject = Instantiate(block, new Vector3(grid[y,x].x * 3, 0, grid[y,x].y * 3), Quaternion.identity);
                     List<string> wallsToRemove = new List<string>(){"bottom", "right", "front", "left"};
                     for (int i = 0; i < grid[y,x].walls.Count; i++)
                     {
-                        Debug.Log(grid[y,x].walls[i]);
                         wallsToRemove.Remove(grid[y,x].walls[i]);
                     }
-                    Debug.Log("-----------------------------------------");
                     for (int i = 0; i < wallsToRemove.Count; i++)
                     {
                         List<string> allWalls = new List<string>(){"bottom", "right", "front", "left"};
-                        Debug.Log(wallsToRemove[i]);
                         switch(wallsToRemove[i])
                         {
                             case "bottom":
@@ -188,30 +184,22 @@ public class MazeGenerator : MonoBehaviourPunCallbacks
         int x = startCell.x - endCell.x;
         switch(x){
             case -1:
-                // Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("right"))).gameObject);
                 startCell.walls.Remove("right");
-                // Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("left"))).gameObject);
                 endCell.walls.Remove("left");
                 break;
             case 1:
-                // Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("left"))).gameObject);
                 startCell.walls.Remove("left");
-                // Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("right"))).gameObject);
                 endCell.walls.Remove("right");
                 break;
         }
         int y = startCell.y - endCell.y;
         switch(y){
             case -1:
-                // Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("front"))).gameObject);
                 startCell.walls.Remove("front");
-                // Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("bottom"))).gameObject);
                 endCell.walls.Remove("bottom");
                 break;
             case 1:
-                // Destroy(startCell.gameObject.transform.GetChild(startCell.walls.FindIndex(a => a.Contains("bottom"))).gameObject);
                 startCell.walls.Remove("bottom");
-                // Destroy(endCell.gameObject.transform.GetChild(endCell.walls.FindIndex(a => a.Contains("front"))).gameObject);
                 endCell.walls.Remove("front");
                 break;
         }
