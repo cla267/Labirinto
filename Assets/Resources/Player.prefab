@@ -176,16 +176,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f3750c932f278f43b54579185e75b1b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mask:
-    serializedVersion: 2
-    m_Bits: 64
   basicCell: {fileID: 6274444440163745718, guid: ca1d9d3e1a0072c4797278ab50fb6908, type: 3}
   leavesCell: {fileID: 2514590573860989460, guid: 43dff0e7bed1c9a4c8d60f0300480d66, type: 3}
-  allWalls:
-  - bottom
-  - right
-  - front
-  - left
 --- !u!1 &2603489568750844845
 GameObject:
   m_ObjectHideFlags: 0
